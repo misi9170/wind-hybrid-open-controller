@@ -12,11 +12,21 @@
 
 # See https://nrel.github.io/wind-hybrid-open-controller for documentation
 
-from floris.utilities import wrap_180
+from whoc.interfaces.interface_base import InterfaceBase
 
 
-def convert_absolute_nacelle_heading_to_offset(target_nac_heading, current_nac_heading):
-    # NOTE: by convention, absolute headings are given CW positive, but offsets
-    # are given CCW positive.
+class WHOC_python_server(InterfaceBase):
+    def __init__():
+        pass
 
-    return -1 * wrap_180(target_nac_heading - current_nac_heading)
+    def get_measurements(self, dict):
+        # Possibly need to extract the measurements from the input dict?
+        measurements = dict
+
+        return measurements
+
+    def send_controls(self, dict):
+        # Not sure if anything needs to be done here. Can possibly return None.
+        controls = dict
+
+        return controls

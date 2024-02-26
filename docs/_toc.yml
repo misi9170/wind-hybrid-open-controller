@@ -1,0 +1,20 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+parts:
+  - caption: General information
+    chapters:
+    - file: install_instructions
+    - file: code_development
+  - caption: Controllers
+    chapters:
+    - file: controllers
+  - caption: Interfaces
+    chapters:
+    - file: interfaces
+  - caption: Examples
+    chapters:
+    - file: examples
+#     - file: order_of_op

@@ -12,11 +12,18 @@
 
 # See https://nrel.github.io/wind-hybrid-open-controller for documentation
 
-from floris.utilities import wrap_180
+from abc import ABCMeta, abstractmethod
 
 
-def convert_absolute_nacelle_heading_to_offset(target_nac_heading, current_nac_heading):
-    # NOTE: by convention, absolute headings are given CW positive, but offsets
-    # are given CCW positive.
+class InterfaceBase(metaclass=ABCMeta):
+    @abstractmethod
+    def get_measurements(self):
+        raise NotImplementedError
 
-    return -1 * wrap_180(target_nac_heading - current_nac_heading)
+    @abstractmethod
+    def check_controls(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def send_controls(self):
+        raise NotImplementedError

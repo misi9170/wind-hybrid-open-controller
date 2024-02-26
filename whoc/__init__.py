@@ -1,4 +1,4 @@
-# Copyright 2021 NREL
+# Copyright 2022 NREL
 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -10,13 +10,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# See https://nrel.github.io/wind-hybrid-open-controller for documentation
+from pathlib import Path
 
-from floris.utilities import wrap_180
-
-
-def convert_absolute_nacelle_heading_to_offset(target_nac_heading, current_nac_heading):
-    # NOTE: by convention, absolute headings are given CW positive, but offsets
-    # are given CCW positive.
-
-    return -1 * wrap_180(target_nac_heading - current_nac_heading)
+ROOT = Path(__file__).parent
+with open(ROOT / "version.py") as version_file:
+    VERSION = version_file.read().strip()
+__version__ = VERSION

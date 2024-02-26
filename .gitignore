@@ -1,0 +1,26 @@
+# Gitignore file
+*.pyc
+*.log
+*.egg-info
+data.db
+*.python-version
+*.DS_Store
+slices
+
+# Data files
+*.csv
+*.log
+examples/*/logstandin
+examples/*/loghercules
+examples/*/logfloris
+
+# macOS files
+.DS_Store
+
+# ide settings and files
+.idea
+.vscode
+
+# Outputs
+*echo
+
