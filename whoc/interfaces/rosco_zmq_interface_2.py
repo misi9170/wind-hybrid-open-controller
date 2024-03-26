@@ -54,6 +54,12 @@ class ROSCO_ZMQInterface(InterfaceBase):
         self.n_turbines = 2 # TODO: Where can I get this information easily?
         self.rosco_measurements = {}
 
+        # Establish the dictionaries to hold the measurements and setpoints
+        self.rosco_measurements = {}
+        self.rosco_setpoints = {}
+        # TEMPORARY
+        self.send_controls(yaw_angles=[12, 14])
+
     def get_measurements(self, hercules_dict=None):
         """
         Reads the inputs from the place where the wfc_controller method sets them
@@ -93,26 +99,26 @@ class ROSCO_ZMQInterface(InterfaceBase):
         self.rosco_time = current_time
                                     
         # Check id and measurements[0] match
-        if id != measurements[0]:
+        if id != measurements["ZMQ_ID"]:
             raise ValueError("Inconsistent turbine ID.")
 
-        self.rosco_measurements["status_{0:03d}".format(id)] = measurements[1]
-        self.rosco_measurements["time_{0:03d}".format(id)] = measurements[2]
-        self.rosco_measurements["mech_power_{0:03d}".format(id)] = measurements[3]
-        self.rosco_measurements["power_{0:03d}".format(id)] = measurements[4]
-        self.rosco_measurements["gen_speed_{0:03d}".format(id)] = measurements[5]
-        self.rosco_measurements["rot_speed_{0:03d}".format(id)] = measurements[6]
-        self.rosco_measurements["gen_torque_{0:03d}".format(id)] = measurements[7]
+        self.rosco_measurements["status_{0:03d}".format(id)] = measurements["iStatus"]
+        self.rosco_measurements["time_{0:03d}".format(id)] = measurements["Time"]
+        self.rosco_measurements["mech_power_{0:03d}".format(id)] = measurements["VS_MechGenPwr"]
+        self.rosco_measurements["power_{0:03d}".format(id)] = measurements["VS_GenPwr"]
+        self.rosco_measurements["gen_speed_{0:03d}".format(id)] = measurements["GenSpeed"]
+        self.rosco_measurements["rot_speed_{0:03d}".format(id)] = measurements["RotSpeed"]
+        self.rosco_measurements["gen_torque_{0:03d}".format(id)] = measurements["GenTqMeas"]
         # TODO: check whether NacelleHeading is absolute or relative (presumably absolute?)
-        self.rosco_measurements["yaw_angle_{0:03d}".format(id)] = measurements[8]
-        self.rosco_measurements["vane_{0:03d}".format(id)] = measurements[9]
-        self.rosco_measurements["wind_speed_{0:03d}".format(id)] = measurements[10]
-        self.rosco_measurements["root_MOOP1_{0:03d}".format(id)] = measurements[11]
-        self.rosco_measurements["root_MOOP2_{0:03d}".format(id)] = measurements[12]
-        self.rosco_measurements["root_MOOP3_{0:03d}".format(id)] = measurements[13]
-        self.rosco_measurements["FA_accel_{0:03d}".format(id)] = measurements[14]
-        self.rosco_measurements["nac_imu_FA_accel_{0:03d}".format(id)] = measurements[15]
-        self.rosco_measurements["azimuth_angle_{0:03d}".format(id)] = measurements[16]
+        self.rosco_measurements["yaw_angle_{0:03d}".format(id)] = measurements["NacHeading"]
+        self.rosco_measurements["vane_{0:03d}".format(id)] = measurements["NacVane"]
+        self.rosco_measurements["wind_speed_{0:03d}".format(id)] = measurements["HorWindV"]
+        self.rosco_measurements["root_MOOP1_{0:03d}".format(id)] = measurements["rootMOOP(1)"]
+        self.rosco_measurements["root_MOOP2_{0:03d}".format(id)] = measurements["rootMOOP(2)"]
+        self.rosco_measurements["root_MOOP3_{0:03d}".format(id)] = measurements["rootMOOP(3)"]
+        self.rosco_measurements["FA_accel_{0:03d}".format(id)] = measurements["FA_Acc"]
+        self.rosco_measurements["nac_imu_FA_accel_{0:03d}".format(id)] = measurements["NacIMU_FA_Acc"]
+        self.rosco_measurements["azimuth_angle_{0:03d}".format(id)] = measurements["Azimuth"]
 
         # Extract control setpoints
         setpoints = {}
@@ -158,8 +164,8 @@ class ROSCO_ZMQInterface(InterfaceBase):
             power_setpoints = [POWER_SETPOINT_DEFAULT] * self.n_turbines
 
         # Set up the controls dict as per turbine ID
-        for id in range(self.n_turbines):
-            self.rosco_setpoints["yaw_setpoint_{0:03d}".format(id)] = yaw_angles[id]
-            self.rosco_setpoints["power_setpoint_{0:03d}".format(id)] = power_setpoints[id]
+        for id in range(1, self.n_turbines+1):
+            self.rosco_setpoints["yaw_setpoint_{0:03d}".format(id)] = yaw_angles[id-1]
+            self.rosco_setpoints["power_setpoint_{0:03d}".format(id)] = power_setpoints[id-1]
                 
         return None

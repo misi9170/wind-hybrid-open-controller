@@ -29,6 +29,9 @@ docs/_build/
 .idea
 .vscode
 
+# Documentation output
+_build
+
 # Outputs
 *echo
 
