@@ -66,7 +66,8 @@ class ROSCO_ZMQInterface(InterfaceBase):
         """
 
         # Handle external signals
-        if hercules_dict is not None and "wind_power_reference" in hercules_dict["external_signals"]:
+        if (hercules_dict is not None 
+            and "wind_power_reference" in hercules_dict["external_signals"]):
             wind_power_reference = hercules_dict["external_signals"]["wind_power_reference"]
         else:
             wind_power_reference = POWER_SETPOINT_DEFAULT
