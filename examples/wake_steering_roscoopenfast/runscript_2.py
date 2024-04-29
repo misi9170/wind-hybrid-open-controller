@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import os
+import pandas as pd
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,7 +8,7 @@ from rosco.toolbox.control_interface import wfc_zmq_server
 from rosco.toolbox.ofTools.case_gen import CaseLibrary as cl
 from rosco.toolbox.ofTools.case_gen.run_FAST import run_FAST_ROSCO
 from rosco.toolbox.ofTools.fast_io import output_processing
-from whoc.controllers.wind_farm_power_tracking_controller import WindFarmPowerDistributingController
+from whoc.controllers.lookup_based_wake_steering_controller import LookupBasedWakeSteeringController
 from whoc.interfaces.rosco_zmq_interface_2 import ROSCO_ZMQInterface
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,14 +18,12 @@ TIME_CHECK = 20
 DESIRED_YAW_OFFSET = [-10, 10]
 
 
-def run_zmq(logfile=None):
+def run_zmq(interface, logfile=None):
     """Start the ZeroMQ server for wind farm control"""
 
     # Start the server at the following address
     network_address = "tcp://*:5555"
     server = wfc_zmq_server(network_address, timeout=60.0, verbose=False, logfile = logfile)
-
-    interface = ROSCO_ZMQInterface()
 
     print("Running open-loop controller...")
     #controller = WindFarmPowerDistributingController(interface)
@@ -72,22 +71,44 @@ def sim_openfast_2():
     r.controller_params["DISCON"]["ZMQ_ID"] = 2
     r.run_FAST()
 
+def sim_wfc(interface):
+    """Run the wind farm control algorithm"""
+    df_opt = pd.read_pickle("yaw_offsets.pkl")
+    input_dict = {
+        "dt":0.5,
+        "controller":{
+            "num_turbines":2,
+            "initial_conditions":{"yaw":270.0}
+        }
+     }
+    controller = LookupBasedWakeSteeringController(interface, input_dict, df_yaw=df_opt)
+    
+    for t in range(20):
+        print("here")
+        controller.step()#{"wind_directions":[270.0, 270.0]})
 
 if __name__ == "__main__":
+    
+    # Instantiate the interface
+    interface = ROSCO_ZMQInterface()
+
     # Start wind farm control server and two openfast simulation
     # as separate processes
     logfile = os.path.join(example_out_dir,os.path.splitext(os.path.basename(__file__))[0]+'.log')
-    p0 = mp.Process(target=run_zmq,args=(logfile,))
+    p0 = mp.Process(target=run_zmq,args=(interface,logfile))
     p1 = mp.Process(target=sim_openfast_1)
     p2 = mp.Process(target=sim_openfast_2)
+    p3 = mp.Process(target=sim_wfc,args=(interface,))
 
     p0.start()
     p1.start()
     p2.start()
+    p3.start()
 
     p0.join()
     p1.join()
     p2.join()
+    p3.join()
 
     ## Run tests
     # Check that info is passed to ROSCO for first simulation

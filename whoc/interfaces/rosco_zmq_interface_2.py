@@ -55,10 +55,22 @@ class ROSCO_ZMQInterface(InterfaceBase):
         self.rosco_measurements = {}
 
         # Establish the dictionaries to hold the measurements and setpoints
-        self.rosco_measurements = {}
+        yaw_angles_initial = {
+            "yaw_angle_{0:03d}".format(id):270.0 for id in range(self.n_turbines)
+        }
+        vane_angles_initial = {
+            "vane_{0:03d}".format(id):0.0 for id in range(self.n_turbines)
+        }
+        powers_initial = {
+            "power_{0:03d}".format(id):0.0 for id in range(self.n_turbines)
+        }
+        self.rosco_measurements = {
+            **yaw_angles_initial,
+            **vane_angles_initial,
+            **powers_initial
+        }
         self.rosco_setpoints = {}
-        # TEMPORARY
-        self.send_controls(yaw_angles=[12, 14])
+        self.rosco_time = 0.0 # Initialize?
 
     def get_measurements(self, hercules_dict=None):
         """
@@ -66,7 +78,8 @@ class ROSCO_ZMQInterface(InterfaceBase):
         """
 
         # Handle external signals
-        if (hercules_dict is not None 
+        if (hercules_dict is not None
+            and "external_signals" in hercules_dict
             and "wind_power_reference" in hercules_dict["external_signals"]):
             wind_power_reference = hercules_dict["external_signals"]["wind_power_reference"]
         else:
@@ -133,17 +146,15 @@ class ROSCO_ZMQInterface(InterfaceBase):
 
     def check_controls(self, controls_dict):
         available_controls = [
-            "turbine_ID",
-            "genTorque",
-            "nacelleHeading",
-            "bladePitch",
+            "yaw_angles",
+            "power_setpoints",
         ]
 
         for k in controls_dict.keys():
             if k not in available_controls:
                 raise ValueError("Setpoint " + k + " is not available in this configuration")
 
-    def send_controls(self, yaw_angles=None, power_setpoints=None):
+    def send_controls(self, _, yaw_angles=None, power_setpoints=None):
         """
         Send controls to ROSCO .dll ffor individual turbine control
 
