@@ -34,6 +34,9 @@ def run_zmq(interface, logfile=None):
     # Run the server to receive measurements and send setpoints
     server.runserver()
 
+    # Do I get here? NO---only after finished. Damn.... so, where does that leave me?
+    print("I'm here! run_zmq")
+
 def sim_openfast_1():
     """Run the first OpenFAST simulation with ZeroMQ enabled"""
     r = run_FAST_ROSCO()
@@ -51,6 +54,7 @@ def sim_openfast_1():
     r.controller_params["DISCON"]["ZMQ_ID"] = 1
     r.save_dir = run_dir
     r.run_FAST()
+    print("I'm here! sim_openfast_1")
 
 
 def sim_openfast_2():
@@ -70,10 +74,12 @@ def sim_openfast_2():
     r.controller_params["DISCON"]["ZMQ_Mode"] = 1
     r.controller_params["DISCON"]["ZMQ_ID"] = 2
     r.run_FAST()
+    print("I'm here! sim_openfast_2")
 
 def sim_wfc(interface):
     """Run the wind farm control algorithm"""
     df_opt = pd.read_pickle("yaw_offsets.pkl")
+    df_opt.yaw_angles_opt = [[12.0, 6.0] for _ in range(len(df_opt))] # Temp test
     input_dict = {
         "dt":0.5,
         "controller":{
@@ -84,8 +90,7 @@ def sim_wfc(interface):
     controller = LookupBasedWakeSteeringController(interface, input_dict, df_yaw=df_opt)
     
     for t in range(20):
-        print("here")
-        controller.step()#{"wind_directions":[270.0, 270.0]})
+        controller.step()
 
 if __name__ == "__main__":
     

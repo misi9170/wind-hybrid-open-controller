@@ -56,26 +56,29 @@ class ROSCO_ZMQInterface(InterfaceBase):
 
         # Establish the dictionaries to hold the measurements and setpoints
         yaw_angles_initial = {
-            "yaw_angle_{0:03d}".format(id):270.0 for id in range(self.n_turbines)
+            "yaw_angle_{0:03d}".format(id):0.0 for id in range(1, self.n_turbines+1)
         }
         vane_angles_initial = {
-            "vane_{0:03d}".format(id):0.0 for id in range(self.n_turbines)
+            "vane_{0:03d}".format(id):0.0 for id in range(1, self.n_turbines+1)
         }
         powers_initial = {
-            "power_{0:03d}".format(id):0.0 for id in range(self.n_turbines)
+            "power_{0:03d}".format(id):0.0 for id in range(1, self.n_turbines+1)
         }
         self.rosco_measurements = {
             **yaw_angles_initial,
             **vane_angles_initial,
             **powers_initial
         }
-        self.rosco_setpoints = {}
+        self.rosco_setpoints = {
+            "yaw_setpoint_{0:03d}".format(id):0.0 for id in range(1, self.n_turbines+1)
+        }
         self.rosco_time = 0.0 # Initialize?
 
     def get_measurements(self, hercules_dict=None):
         """
         Reads the inputs from the place where the wfc_controller method sets them
         """
+        #print("ROSCO time in get_measurements():", self.rosco_time)
 
         # Handle external signals
         if (hercules_dict is not None
@@ -89,10 +92,10 @@ class ROSCO_ZMQInterface(InterfaceBase):
         wind_directions = [
             self.rosco_measurements["yaw_angle_{0:03d}".format(id)] 
             + self.rosco_measurements["vane_{0:03d}".format(id)]
-            for id in range(self.n_turbines)
+            for id in range(1, self.n_turbines+1)
         ]
         turbine_powers = [
-            self.rosco_measurements["power_{0:03d}".format(id)] for id in range(self.n_turbines)
+            self.rosco_measurements["power_{0:03d}".format(id)] for id in range(1, self.n_turbines+1)
         ]
 
         # Combine into dict
@@ -141,6 +144,8 @@ class ROSCO_ZMQInterface(InterfaceBase):
         setpoints["ZMQ_PitOffset(2)"] = 0 # Not currently controlled
         setpoints["ZMQ_PitOffset(3)"] = 0 # Not currently controlled
         #setpoints["ZMQ_PowerReference"] = 0 # Not currently implemented
+
+        #print("wfc_controller:", self.rosco_setpoints)
 
         return setpoints
 
