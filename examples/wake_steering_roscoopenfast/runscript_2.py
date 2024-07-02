@@ -99,6 +99,9 @@ if __name__ == "__main__":
 
     # Start wind farm control server and two openfast simulation
     # as separate processes
+    # I had hoped I could pass the _same_ instantiated interface to both
+    # the server and the controller, but as they are running on different 
+    # processes, this seems to create a copy and there is no communication.
     logfile = os.path.join(example_out_dir,os.path.splitext(os.path.basename(__file__))[0]+'.log')
     p0 = mp.Process(target=run_zmq,args=(interface,logfile))
     p1 = mp.Process(target=sim_openfast_1)
