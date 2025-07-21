@@ -91,7 +91,7 @@ def test_controller_instantiation():
         wind_controller=1, # Override error raised for empty controllers
     )
     _ = HybridSupervisoryControllerBaseline_ForecastDemo(
-        interface=test_interface, input_dict=test_hercules_dict
+        interface=test_interface, input_dict=test_hercules_dict, wind_controller=1
     )
     _ = SolarPassthroughController(interface=test_interface, input_dict=test_hercules_dict)
     _ = BatteryPassthroughController(interface=test_interface, input_dict=test_hercules_dict)
@@ -424,13 +424,16 @@ def test_HybridSupervisoryControllerBaseline_subsets():
 def test_HybridSupervisoryControllerBaseline_ForecastDemo():
     test_interface = HerculesHybridADInterface(test_hercules_dict)
 
+    wind_controller = WindFarmPowerTrackingController(test_interface, test_hercules_dict)
+
     test_controller = HybridSupervisoryControllerBaseline_ForecastDemo(
-        interface=test_interface, input_dict=test_hercules_dict
+        interface=test_interface, input_dict=test_hercules_dict, wind_controller=wind_controller
     )
 
     test_controller.step(test_hercules_dict)
     # test_hercules_dict doesn't have forecast data, so should return empty dict
-    assert test_controller.return_forecast() == {}
+    test_measurements_dict = test_controller._s.get_measurements(test_hercules_dict)
+    assert test_controller.return_forecast(test_measurements_dict) == {}
 
     # Add forecast data to test_hercules_dict
     test_forecast_dict = {
@@ -442,7 +445,8 @@ def test_HybridSupervisoryControllerBaseline_ForecastDemo():
     }
     test_hercules_dict["external_signals"] = test_forecast_dict
     test_controller.step(test_hercules_dict)
-    forecast_dict = test_controller.return_forecast()
+    test_measurements_dict = test_controller._s.get_measurements(test_hercules_dict)
+    forecast_dict = test_controller.return_forecast(test_measurements_dict)
 
     del test_forecast_dict["ws_median_0"]
 

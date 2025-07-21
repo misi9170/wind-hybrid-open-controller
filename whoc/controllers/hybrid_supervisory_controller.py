@@ -182,14 +182,14 @@ class HybridSupervisoryControllerBaseline(ControllerBase):
 
 class HybridSupervisoryControllerBaseline_ForecastDemo(HybridSupervisoryControllerBaseline):
 
-    def return_forecast(self):
-        return self.measurements_dict["forecast"]
+    def return_forecast(self, measurements_dict):
+        return measurements_dict["forecast"]
 
-    def compute_controls(self):
+    def compute_controls(self, measurements_dict):
 
-        forecast = self.return_forecast()
+        forecast = self.return_forecast(measurements_dict)
         print("Demo forecast:", forecast) # print statement eventually can be removed
 
         # Predictive controller code to be put here, and may replace super().compute_controls()
 
-        return super().compute_controls()
+        return super().compute_controls(measurements_dict)
