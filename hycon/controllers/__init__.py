@@ -11,6 +11,10 @@ from hycon.controllers.hydrogen_plant_controller import HydrogenPlantController
 from hycon.controllers.lookup_based_wake_steering_controller import (
     LookupBasedWakeSteeringController,
 )
+from hycon.controllers.natural_gas_peaker_controller import (
+    NaturalGasPeakerController,
+    RealTimeGasController,
+)
 from hycon.controllers.solar_passthrough_controller import SolarPassthroughController
 from hycon.controllers.wake_steering_rosco_standin import WakeSteeringROSCOStandin
 from hycon.controllers.wind_farm_power_tracking_controller import (

@@ -30,6 +30,7 @@ class HerculesInterface(InterfaceBase):
         self._has_solar_component = "solar_farm" in h_dict
         self._has_battery_component = "battery" in h_dict
         self._has_hydrogen_component = "electrolyzer" in h_dict
+        self._has_thermal_component = "open_cycle_gas_turbine" in h_dict # or other types
 
         # Wind farm parameters
         if self._has_wind_component:
@@ -62,6 +63,19 @@ class HerculesInterface(InterfaceBase):
         if self._has_hydrogen_component:
             self.plant_parameters["hydrogen"] = {}
 
+        # Thermal plant parameters (placeholder for future thermal plant parameters)
+        if self._has_thermal_component:
+            self.plant_parameters["thermal"] = {}
+            if "open_cycle_gas_turbine" in h_dict:
+                self.plant_parameters["thermal"]["thermal_type"] = "open_cycle_gas_turbine"
+            self.plant_parameters["thermal"]["rated_capacity"] = (
+                h_dict[self.plant_parameters["thermal"]["thermal_type"]]["rated_capacity"]
+            )
+            self.plant_parameters["thermal"]["min_stable_load"] = (
+                h_dict[self.plant_parameters["thermal"]["thermal_type"]]["min_stable_load_fraction"]
+                * self.plant_parameters["thermal"]["rated_capacity"]
+            )
+
         # Pre-compute LMP keys to avoid string formatting in get_measurements
         self._lmp_da_keys = tuple(f"lmp_da_{h:02d}" for h in range(24))
 
@@ -70,6 +84,7 @@ class HerculesInterface(InterfaceBase):
             "wind_power_setpoints",
             "solar_power_setpoint",
             "battery_power_setpoint",
+            "thermal_power_setpoint",
         ]
 
         for k in controls_dict.keys():
@@ -125,6 +140,13 @@ class HerculesInterface(InterfaceBase):
                 "production_rate": h_dict["electrolyzer"]["H2_mfr"],
             }
 
+        # Basic thermal plant quantities
+        if self._has_thermal_component:
+            measurements["thermal"] = {
+                "power": h_dict[self.plant_parameters["thermal"]["thermal_type"]]["power"],
+            }
+            total_power += measurements["thermal"]["power"]
+
         # Handle external signals (parse and pass to individual components)
         if "external_signals" in h_dict:
             if "plant_power_reference" in h_dict["external_signals"]:
@@ -153,6 +175,12 @@ class HerculesInterface(InterfaceBase):
                     "hydrogen_reference"
                 ]
 
+            if ("thermal_power_reference" in h_dict["external_signals"]
+                and self._has_thermal_component):
+                measurements["thermal"]["power_reference"] = h_dict["external_signals"][
+                    "thermal_power_reference"
+                ]
+
             # Grid price information (using pre-computed keys for performance)
             if "lmp_da_00" in h_dict["external_signals"]:
                 measurements["DA_LMP_24hours"] = [
@@ -178,13 +206,17 @@ class HerculesInterface(InterfaceBase):
         wind_power_setpoints=None,
         solar_power_setpoint=None,
         battery_power_setpoint=None,
+        thermal_power_setpoint=None,
     ):
+        # Establish default values
         if wind_power_setpoints is None:
             wind_power_setpoints = [POWER_SETPOINT_DEFAULT] * self._n_turbines
         if solar_power_setpoint is None:
             solar_power_setpoint = POWER_SETPOINT_DEFAULT
         if battery_power_setpoint is None:
             battery_power_setpoint = 0.0
+        if thermal_power_setpoint is None:
+            thermal_power_setpoint = 0.0
 
         if self._has_wind_component:
             # Set wind power setpoints
@@ -197,5 +229,11 @@ class HerculesInterface(InterfaceBase):
         if self._has_battery_component:
             # Set battery power setpoint (positive for discharge)
             h_dict["battery"]["power_setpoint"] = battery_power_setpoint
+
+        if self._has_thermal_component:
+            # Set thermal plant power setpoint
+            h_dict[self.plant_parameters["thermal"]["thermal_type"]]["power_setpoint"] = (
+                thermal_power_setpoint
+            )
 
         return h_dict

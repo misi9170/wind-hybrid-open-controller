@@ -15,6 +15,7 @@ class HybridSupervisoryControllerBase(ControllerBase):
         wind_controller=None,
         solar_controller=None,
         battery_controller=None,
+        thermal_controller=None,
         verbose=False,
     ):
         super().__init__(interface=interface, verbose=verbose)
@@ -25,24 +26,31 @@ class HybridSupervisoryControllerBase(ControllerBase):
         self.wind_controller = wind_controller
         self.solar_controller = solar_controller
         self.battery_controller = battery_controller
+        self.thermal_controller = thermal_controller
 
         self._has_solar_controller = solar_controller is not None
         self._has_wind_controller = wind_controller is not None
         self._has_battery_controller = battery_controller is not None
+        self._has_thermal_controller = thermal_controller is not None
 
         # Initialize power references
         self.wind_reference = 0
         self.solar_reference = 0
         self.battery_reference = 0
+        self.thermal_reference = 0
         self.prev_battery_power = 0
         self.prev_wind_power = 0
         self.prev_solar_power = 0
+        self.prev_thermal_power = 0
 
     def compute_controls(self, measurements_dict):
         # Run supervisory control logic
-        wind_reference, solar_reference, battery_reference = self.supervisory_control(
-            measurements_dict
-        )
+        (
+            wind_reference,
+            solar_reference,
+            battery_reference,
+            thermal_reference,
+        ) = self.supervisory_control(measurements_dict)
 
         # Package the controls for the individual controllers, step, and return
         controls_dict = {}
@@ -58,6 +66,10 @@ class HybridSupervisoryControllerBase(ControllerBase):
             measurements_dict["battery"]["power_reference"] = battery_reference
             battery_controls_dict = self.battery_controller.compute_controls(measurements_dict)
             controls_dict["battery_power_setpoint"] = battery_controls_dict["power_setpoint"]
+        if self._has_thermal_controller:
+            measurements_dict["thermal"]["power_reference"] = thermal_reference
+            thermal_controls_dict = self.thermal_controller.compute_controls(measurements_dict)
+            controls_dict["thermal_power_setpoint"] = thermal_controls_dict["power_setpoint"]
 
         return controls_dict
 
@@ -208,6 +220,7 @@ class HybridSupervisoryControllerMultiRef(HybridSupervisoryControllerBase):
         wind_controller=None,
         solar_controller=None,
         battery_controller=None,
+        thermal_controller=None,
         verbose=False,
     ):
         super().__init__(
@@ -216,6 +229,7 @@ class HybridSupervisoryControllerMultiRef(HybridSupervisoryControllerBase):
             wind_controller=wind_controller,
             solar_controller=solar_controller,
             battery_controller=battery_controller,
+            thermal_controller=thermal_controller,
             verbose=verbose,
         )
 
@@ -230,12 +244,13 @@ class HybridSupervisoryControllerMultiRef(HybridSupervisoryControllerBase):
             raise KeyError("interconnect_limit must be specified to use this controller.")
 
         # Establish curtailment protocols
-        default_curtailment_order = ["battery", "solar", "wind"]
+        default_curtailment_order = ["thermal", "battery", "solar", "wind"]
         default_curtailment_order = [
             c
             for c, a in zip(
                 default_curtailment_order,
                 [
+                    self._has_thermal_controller,
                     self._has_battery_controller,
                     self._has_solar_controller,
                     self._has_wind_controller,
@@ -303,6 +318,19 @@ class HybridSupervisoryControllerMultiRef(HybridSupervisoryControllerBase):
             battery_power = 0
             battery_reference = 0
 
+        if self._has_thermal_controller:
+            thermal_power = measurements_dict["thermal"]["power"]
+            if "power_reference" in measurements_dict["thermal"]:
+                thermal_reference = measurements_dict["thermal"].get("power_reference", 0)
+            else:
+                thermal_reference = 0
+            thermal_reference = np.minimum(
+                thermal_reference, self.plant_parameters["thermal"]["rated_capacity"]
+            )
+            thermal_reference = np.maximum(
+                thermal_reference, self.plant_parameters["thermal"]["min_stable_load"]
+            )
+
         # Filter the wind and solar power measurements to reduce noise and improve closed-loop
         # controller damping
         # TODO RECONSIDER THIS MAYBE MAKE MORE DEPENDENT ON THE TIME STEP
@@ -310,6 +338,7 @@ class HybridSupervisoryControllerMultiRef(HybridSupervisoryControllerBase):
         wind_power = (1 - a) * self.prev_wind_power + a * wind_power
         solar_power = (1 - a) * self.prev_solar_power + a * solar_power
         battery_power = (1 - a) * self.prev_battery_power + a * battery_power
+        thermal_power = (1 - a) * self.prev_thermal_power + a * thermal_power
 
         # Loop over the curtailment order in reverse order to progressively reduce the reference
         # of the first component in the order
@@ -339,16 +368,24 @@ class HybridSupervisoryControllerMultiRef(HybridSupervisoryControllerBase):
                 )
                 if battery_power < 0:  # Make sure not to double count battery power when charging
                     unconstrained_power += battery_power
+            elif component == "thermal":
+                thermal_reference = np.minimum(
+                    thermal_reference,
+                    self.plant_parameters["interconnect_limit"] - unconstrained_power,
+                )
+                unconstrained_power += thermal_reference
             else:
                 raise ValueError(f"Invalid generation type {component} in curtailment_order.")
 
         self.prev_solar_power = solar_power
         self.prev_wind_power = wind_power
         self.prev_battery_power = battery_power
+        self.prev_thermal_power = thermal_power
         self.wind_reference = wind_reference
         self.solar_reference = solar_reference
         self.battery_reference = battery_reference
+        self.thermal_reference = thermal_reference
 
-        return wind_reference, solar_reference, battery_reference
+        return wind_reference, solar_reference, battery_reference, thermal_reference
 
     # TODO: Need to add it's own compute_controls method that ensures interconnect is satisfied
