@@ -106,19 +106,19 @@ def plot_outputs():
     ax.set_ylabel("Price [$/MWh]")
     ax.set_xlim([0, df["time"].max()])
 
-    # Plot the battery power and SOC
+    # Plot the gas plant power output and fuel consumption
     ax = axarr[1]
     ax.plot(
         df["time"],
-        df["battery.power"] / 1e3,  # Base unit: kW
-        label="Battery output",
+        df["open_cycle_gas_turbine.power"] / 1e3,  # Base unit: kW
+        label="Plant output",
         color="k",
         linewidth=1.0,
     )
     ax.plot(
         df["time"],
-        df["battery.power_setpoint"] / 1e3,  # Base unit: kW
-        label="Battery setpoint",
+        df["open_cycle_gas_turbine.power_setpoint"] / 1e3,  # Base unit: kW
+        label="Plant setpoint",
         color="k",
         linestyle=":",
         linewidth=1.0,
@@ -128,8 +128,8 @@ def plot_outputs():
     ax2 = ax.twinx()
 
     color = "C0"
-    ax2.set_ylabel("State of charge [-]", color=color)
-    ax2.plot(df["time"], df["battery.soc"], color=color)
+    ax2.set_ylabel("Fuel consumption [kg/s]", color=color)
+    ax2.plot(df["time"], df["open_cycle_gas_turbine.fuel_mass_rate"], color=color)
     ax2.tick_params(axis="y", labelcolor=color)
 
     for ax in axarr:
@@ -137,7 +137,7 @@ def plot_outputs():
         ax.legend(loc="upper right")
 
     # Compute total revenue on real-time market
-    df["revenue_rt"] = df["battery.power"] / 1e3 * df["external_signals.lmp_rt"] / 3600
+    df["revenue_rt"] = df["plant.power"] / 1e3 * df["external_signals.lmp_rt"] / 3600
     print("Real-time revenue over simulation: ${:.1f}".format(df["revenue_rt"].sum()))
 
     return fig

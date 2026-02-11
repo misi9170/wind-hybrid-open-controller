@@ -9,7 +9,7 @@ from hercules.hercules_model import HerculesModel
 from hercules.utilities_examples import prepare_output_directory
 from hycon.controllers import (
     HybridSupervisoryControllerMultiRef,
-    NaturalGasPeakerController,
+    # NaturalGasPeakerController,
     RealTimeGasController,
 )
 from hycon.interfaces import HerculesInterface
@@ -31,7 +31,11 @@ hmodel = HerculesModel("hercules_input.yaml")
 # Establish the interface and controller, assign to the Hercules model
 interface = HerculesInterface(hmodel.h_dict)
 controller = HybridSupervisoryControllerMultiRef(
-    thermal_controller=RealTimeGasController(interface=interface, input_dict=hmodel.h_dict),
+    thermal_controller=RealTimeGasController(
+        interface=interface,
+        input_dict=hmodel.h_dict,
+        controller_parameters={"price_threshold": 10.0},  # Artificially low for demonstration
+    ),
     interface=HerculesInterface(hmodel.h_dict),
     input_dict=hmodel.h_dict,
 )
