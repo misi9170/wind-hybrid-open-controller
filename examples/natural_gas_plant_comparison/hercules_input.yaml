@@ -1,11 +1,11 @@
 # Input YAML for hercules
 
 # Name
-name: battery_market_revenue_control
+name: natural_gas_plant_comparison
 
 ###
 # Describe this emulator setup
-description: Battery alone
+description: Natural gas plant alone
 
 dt: 1.0
 starttime_utc: "2020-04-01T00:00:00Z"
